@@ -2,7 +2,12 @@
 
 # Configuration DKIM de manière idempotente
 if [ ! -f "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" ]; then
+    # Générer les clés DKIM
     setup config dkim domain "${DOMAIN}"
+    
+    # Reformater le fichier mail.txt
+    DKIM_KEY=$(grep -o 'p=.*' "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt" | tr -d '\n\t ")')
+    echo "mail._domainkey IN TXT v=DKIM1; h=sha256; k=rsa; ${DKIM_KEY}" > "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt"
 fi
 
 # Configuration Postfix avec proxy_interfaces
