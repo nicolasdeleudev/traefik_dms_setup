@@ -9,8 +9,8 @@ if [ ! -f "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" ]; then
     DKIM_KEY="p=$(openssl rsa -in "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" -pubout -outform PEM 2>/dev/null | grep -v '^-' | tr -d '\n')"
     echo "mail._domainkey IN TXT v=DKIM1; h=sha256; k=rsa; ${DKIM_KEY}" > "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt"
 
-    # Configuration des fichiers OpenDKIM
-    echo "mail._domainkey.${DOMAIN} ${DOMAIN}:mail:/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" > "/tmp/docker-mailserver/opendkim/KeyTable"
+    # Configuration des fichiers OpenDKIM avec le chemin /etc/opendkim/
+    echo "mail._domainkey.${DOMAIN} ${DOMAIN}:mail:/etc/opendkim/keys/${DOMAIN}/mail.private" > "/tmp/docker-mailserver/opendkim/KeyTable"
     echo "*@${DOMAIN} mail._domainkey.${DOMAIN}" > "/tmp/docker-mailserver/opendkim/SigningTable"
     echo -e "127.0.0.1\nlocalhost\n${DOMAIN}" > "/tmp/docker-mailserver/opendkim/TrustedHosts"
 
