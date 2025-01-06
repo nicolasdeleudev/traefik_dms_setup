@@ -23,18 +23,26 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls=true"
-      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
+      - "--entrypoints.websecure.http.tls.certResolver=zerossl"  # Changé ici
       # Ports STARTTLS (sans TLS)
       - "--entrypoints.mail-smtp.address=:25"
       - "--entrypoints.mail-pop3.address=:110"
       # Ports SSL implicite (avec TLS)
       - "--entrypoints.mail-submissions.address=:465"
       - "--entrypoints.mail-pop3s.address=:995"
-      # Let's Encrypt
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Configuration ZeroSSL (temporaire jusqu'au 8 janvier)
+      - "--certificatesresolvers.zerossl.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.zerossl.acme.storage=/acme.json"
+      - "--certificatesresolvers.zerossl.acme.caserver=https://acme.zerossl.com/v2/DV90"
+      - "--certificatesresolvers.zerossl.acme.httpchallenge=true"
+      - "--certificatesresolvers.zerossl.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.zerossl.acme.eab.kid=jkTGnTmMqmbWLAkwm56pUw"
+      - "--certificatesresolvers.zerossl.acme.eab.hmackey=EC_aTR2_vBNIt2GvvCAfxvvviIhHwDWKBWeyupg8rUYrBN2so2JbMTMAb10WdRaEA0354Z5O0GAwqiojClKjZQ"
+      # Configuration Let's Encrypt (à réactiver le 8 janvier)
+      #- "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      #- "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
+      #- "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      #- "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       # Debug
       - "--log.level=DEBUG"
     ports:
@@ -76,7 +84,7 @@ services:
       - "traefik.http.routers.whoami-https.rule=Host(`${DOMAIN}`) || Host(`${MAIL_HOSTNAME}`)"
       - "traefik.http.routers.whoami-https.entrypoints=websecure"
       - "traefik.http.routers.whoami-https.tls=true"
-      - "traefik.http.routers.whoami-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.whoami-https.tls.certresolver=zerossl" # Changer ici
       - "traefik.http.routers.whoami-https.service=whoami"
       # Service
       - "traefik.http.services.whoami.loadbalancer.server.port=48080"
