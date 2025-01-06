@@ -36,8 +36,8 @@ services:
       - "--certificatesresolvers.zerossl.acme.caserver=https://acme.zerossl.com/v2/DV90"
       - "--certificatesresolvers.zerossl.acme.httpchallenge=true"
       - "--certificatesresolvers.zerossl.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.zerossl.acme.eabkid=jkTGnTmMqmbWLAkwm56pUw"
-      - "--certificatesresolvers.zerossl.acme.eabhmackey=EC_aTR2_vBNIt2GvvCAfxvvviIhHwDWKBWeyupg8rUYrBN2so2JbMTMAb10WdRaEA0354Z5O0GAwqiojClKjZQ"
+      - "--certificatesresolvers.zerossl.acme.eab.kid=jkTGnTmMqmbWLAkwm56pUw"
+      - "--certificatesresolvers.zerossl.acme.eab.hmacencoded=EC_aTR2_vBNIt2GvvCAfxvvviIhHwDWKBWeyupg8rUYrBN2so2JbMTMAb10WdRaEA0354Z5O0GAwqiojClKjZQ"
       # Configuration Let's Encrypt (à réactiver le 8 janvier)
       #- "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
       #- "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
