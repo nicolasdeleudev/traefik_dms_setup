@@ -5,8 +5,8 @@ if [ ! -f "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" ]; then
     # Générer les clés DKIM
     setup config dkim domain "${DOMAIN}"
     
-    # Reformater le fichier mail.txt
-    DKIM_KEY=$(grep -o 'p=.*' "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt" | tr -d '\n\t ")')
+    # Reformater le fichier mail.txt avec une meilleure capture de la clé
+    DKIM_KEY=$(awk '/p=/ {sub(/.*p=/, "p="); gsub(/["\t\n)]/, ""); print}' "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt")
     echo "mail._domainkey IN TXT v=DKIM1; h=sha256; k=rsa; ${DKIM_KEY}" > "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.txt"
 fi
 
