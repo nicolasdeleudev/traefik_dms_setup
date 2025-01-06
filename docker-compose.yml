@@ -2,18 +2,44 @@ services:
   traefik:
     image: traefik:v2.10
     container_name: traefik
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--api.insecure=true"
+      - "--ping=true"
+      # HTTP et HTTPS pour ACME
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
       # Ports STARTTLS (sans TLS)
       - "--entrypoints.mail-smtp.address=:25"
       - "--entrypoints.mail-pop3.address=:110"
       # Ports SSL implicite (avec TLS)
       - "--entrypoints.mail-submissions.address=:465"
       - "--entrypoints.mail-pop3s.address=:995"
+      # Let's Encrypt
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Debug
+      - "--log.level=DEBUG"
     ports:
+      - "80:80"
+      - "443:443"
       - "25:25"
       - "465:465"
       - "110:110"
@@ -22,16 +48,51 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data/traefik/acme.json:/acme.json
     networks:
-      default:
+      traefik_mail:
         ipv4_address: ${TRAEFIK_IP}
+
+  whoami:
+    image: traefik/whoami
+    container_name: whoami
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    command:
+      - --port=48080
+    networks:
+      - traefik_mail
+    labels:
+      - "traefik.enable=true"
+      # Route HTTP pour le challenge ACME
+      - "traefik.http.routers.whoami-http.rule=Host(`${DOMAIN}`) || Host(`${MAIL_HOSTNAME}`)"
+      - "traefik.http.routers.whoami-http.entrypoints=web"
+      - "traefik.http.routers.whoami-http.service=whoami"
+      # Route HTTPS
+      - "traefik.http.routers.whoami-https.rule=Host(`${DOMAIN}`) || Host(`${MAIL_HOSTNAME}`)"
+      - "traefik.http.routers.whoami-https.entrypoints=websecure"
+      - "traefik.http.routers.whoami-https.tls=true"
+      - "traefik.http.routers.whoami-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.whoami-https.service=whoami"
+      # Service
+      - "traefik.http.services.whoami.loadbalancer.server.port=48080"
 
   mailserver:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
     container_name: mailserver
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     hostname: ${MAIL_HOSTNAME}
     domainname: ${DOMAIN}
     environment:
-      - SSL_TYPE=letsencrypt-pregenerated
+      - SSL_TYPE=letsencrypt
       - SSL_CERT_PATH=/etc/letsencrypt/acme.json
       - ENABLE_POP3=1
       - ENABLE_PROXY_PROTOCOL=1
@@ -52,39 +113,45 @@ services:
       - ./data/dms/config/:/tmp/docker-mailserver/
       - ./data/traefik/acme.json:/etc/letsencrypt/acme.json:ro
     networks:
-      default:
+      traefik_mail:
         ipv4_address: ${MAILSERVER_IP}
     labels:
       - "traefik.enable=true"
       # SMTP (25) - Sans HostSNI car STARTTLS
       - "traefik.tcp.routers.mail-smtp.entrypoints=mail-smtp"
-      - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
-      - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
-      - "traefik.tcp.services.mail-smtp.loadbalancer.proxyProtocol.version=2"
+      - "traefik.tcp.routers.mail-smtp.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mail-smtp-svc.loadbalancer.server.port=25"
+      - "traefik.tcp.routers.mail-smtp.service=mail-smtp-svc"
+      - "traefik.tcp.services.mail-smtp-svc.loadbalancer.proxyProtocol.version=2"
       
       # SMTPS (465) - Avec HostSNI et passthrough car TLS implicite
       - "traefik.tcp.routers.mail-submissions.rule=HostSNI(`${MAIL_HOSTNAME}`)"
       - "traefik.tcp.routers.mail-submissions.entrypoints=mail-submissions"
       - "traefik.tcp.routers.mail-submissions.tls.passthrough=true"
-      - "traefik.tcp.services.mail-submissions.loadbalancer.server.port=465"
-      - "traefik.tcp.services.mail-submissions.loadbalancer.proxyProtocol.version=2"
+      - "traefik.tcp.services.mail-submissions-svc.loadbalancer.server.port=465"
+      - "traefik.tcp.routers.mail-submissions.service=mail-submissions-svc"
+      - "traefik.tcp.services.mail-submissions-svc.loadbalancer.proxyProtocol.version=2"
       
       # POP3 (110) - Sans HostSNI car STARTTLS
       - "traefik.tcp.routers.mail-pop3.entrypoints=mail-pop3"
-      - "traefik.tcp.routers.mail-pop3.service=mail-pop3"
-      - "traefik.tcp.services.mail-pop3.loadbalancer.server.port=110"
-      - "traefik.tcp.services.mail-pop3.loadbalancer.proxyProtocol.version=2"
+      - "traefik.tcp.routers.mail-pop3.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mail-pop3-svc.loadbalancer.server.port=110"
+      - "traefik.tcp.routers.mail-pop3.service=mail-pop3-svc"
+      - "traefik.tcp.services.mail-pop3-svc.loadbalancer.proxyProtocol.version=2"
       
       # POP3S (995) - Avec HostSNI et passthrough car TLS implicite
       - "traefik.tcp.routers.mail-pop3s.rule=HostSNI(`${MAIL_HOSTNAME}`)"
       - "traefik.tcp.routers.mail-pop3s.entrypoints=mail-pop3s"
       - "traefik.tcp.routers.mail-pop3s.tls.passthrough=true"
-      - "traefik.tcp.services.mail-pop3s.loadbalancer.server.port=995"
-      - "traefik.tcp.services.mail-pop3s.loadbalancer.proxyProtocol.version=2"
+      - "traefik.tcp.services.mail-pop3s-svc.loadbalancer.server.port=995"
+      - "traefik.tcp.routers.mail-pop3s.service=mail-pop3s-svc"
+      - "traefik.tcp.services.mail-pop3s-svc.loadbalancer.proxyProtocol.version=2"
 
 networks:
-  default:
+  traefik_mail:
+    name: traefik_mail_network
     driver: bridge
+    external: false
     ipam:
       config:
         - subnet: ${DOCKER_SUBNET} 
