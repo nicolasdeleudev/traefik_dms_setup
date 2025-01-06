@@ -26,6 +26,7 @@ services:
       - "--entrypoints.websecure.http.tls.certResolver=zerossl"  # Changé ici
       # Ports STARTTLS (sans TLS)
       - "--entrypoints.mail-smtp.address=:25"
+      - "--entrypoints.mail-submission.address=:587"
       - "--entrypoints.mail-pop3.address=:110"
       # Ports SSL implicite (avec TLS)
       - "--entrypoints.mail-submissions.address=:465"
@@ -50,6 +51,7 @@ services:
       - "443:443"
       - "25:25"
       - "465:465"
+      - "587:587" 
       - "110:110"
       - "995:995"
     volumes:
@@ -132,6 +134,13 @@ services:
       - "traefik.tcp.services.mail-smtp-svc.loadbalancer.server.port=25"
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp-svc"
       - "traefik.tcp.services.mail-smtp-svc.loadbalancer.proxyProtocol.version=2"
+
+      # SMTP (587) - Sans HostSNI car STARTTLS
+      - "traefik.tcp.routers.mail-submission.entrypoints=mail-submission"
+      - "traefik.tcp.routers.mail-submission.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mail-submission-svc.loadbalancer.server.port=587"
+      - "traefik.tcp.routers.mail-submission.service=mail-submission-svc"
+      - "traefik.tcp.services.mail-submission-svc.loadbalancer.proxyProtocol.version=2"
       
       # SMTPS (465) - Avec HostSNI et passthrough car TLS implicite
       - "traefik.tcp.routers.mail-submissions.rule=HostSNI(`${MAIL_HOSTNAME}`)"
