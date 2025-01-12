@@ -25,7 +25,7 @@ fi
 
 # Configuration Postfix avec PROXY Protocol
 postconf -e "proxy_interfaces = ${PUBLIC_IP}"
-postconf -e "smtpd_upstream_proxy_protocol = yes"
+postconf -e "smtpd_upstream_proxy_protocol = haproxy"
 postconf -e "smtpd_upstream_proxy_timeout = 5s"
 
 # Configuration Dovecot pour PROXY Protocol
