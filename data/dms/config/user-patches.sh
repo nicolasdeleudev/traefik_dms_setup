@@ -24,6 +24,8 @@ if [ ! -f "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" ]; then
 fi
 
 # Configuration Postfix avec PROXY Protocol
+postconf -F '*/*/chroot = n'
+postconf -e "postscreen_upstream_proxy_protocol = haproxy"
 postconf -e "proxy_interfaces = ${PUBLIC_IP}"
 postconf -e "smtpd_upstream_proxy_protocol = haproxy"
 postconf -e "smtpd_upstream_proxy_timeout = 5s"
