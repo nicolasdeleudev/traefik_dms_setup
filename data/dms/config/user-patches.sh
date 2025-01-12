@@ -29,9 +29,26 @@ postconf -e "smtpd_upstream_proxy_protocol = yes"
 postconf -e "smtpd_upstream_proxy_timeout = 5s"
 
 # Configuration Dovecot pour PROXY Protocol
-cat >> /etc/dovecot/conf.d/10-master.conf << EOF
+cat > /etc/dovecot/conf.d/10-haproxy.conf << EOF
+service imap-login {
+  inet_listener imap {
+    haproxy = yes
+  }
+  inet_listener imaps {
+    haproxy = yes
+  }
+}
+
+service pop3-login {
+  inet_listener pop3 {
+    haproxy = yes
+  }
+  inet_listener pop3s {
+    haproxy = yes
+  }
+}
+
 haproxy_trusted_networks = ${DOVECOT_TRUSTED_NETWORKS}
-haproxy = yes
 EOF
 
 # Configuration Postfix pour les restrictions d'envoi
