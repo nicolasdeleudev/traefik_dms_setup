@@ -60,7 +60,7 @@ postconf -e "smtpd_sender_restrictions = check_sender_access hash:/etc/postfix/f
 cat > /etc/dovecot/conf.d/99-pop3-delete.conf << EOF
 protocol pop3 {
     pop3_delete_type = expunge
-    pop3_deleted_flag = \Deleted
+    pop3_deleted_flag = deleted
 }
 EOF
 
