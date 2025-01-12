@@ -23,9 +23,18 @@ if [ ! -f "/tmp/docker-mailserver/opendkim/keys/${DOMAIN}/mail.private" ]; then
     supervisorctl restart opendkim
 fi
 
-# Configuration Postfix avec proxy_interfaces
+# Configuration Postfix avec PROXY Protocol
 postconf -e "proxy_interfaces = ${PUBLIC_IP}"
-postconf -e "proxy_protocol_networks = ${TRAEFIK_IP}"
+postconf -e "smtpd_upstream_proxy_protocol = yes"
+postconf -e "smtpd_upstream_proxy_timeout = 5s"
+
+# Configuration Dovecot pour PROXY Protocol
+cat >> /etc/dovecot/conf.d/10-master.conf << EOF
+haproxy_trusted_networks = ${TRAEFIK_IP}
+haproxy = yes
+EOF
+
+# Configuration Postfix pour les restrictions d'envoi
 postconf -e "smtpd_sender_restrictions = check_sender_access hash:/etc/postfix/from_filter, permit_sasl_authenticated, reject"
 
 # Configuration Dovecot pour POP3 avec suppression immédiate
