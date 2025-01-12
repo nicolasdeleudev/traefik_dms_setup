@@ -54,7 +54,7 @@ haproxy_trusted_networks = ${DOVECOT_TRUSTED_NETWORKS}
 EOF
 
 # Configuration Postfix pour les restrictions d'envoi
-postconf -e "smtpd_sender_restrictions = check_sender_access hash:/etc/postfix/from_filter, permit_sasl_authenticated, reject"
+postconf -e "smtpd_sender_restrictions = check_sender_access hash:/etc/postfix/from_filter, permit_sasl_authenticated, permit_mynetworks, reject_unknown_sender_domain"
 
 # Configuration Dovecot pour POP3 avec suppression immédiate
 cat > /etc/dovecot/conf.d/99-pop3-delete.conf << EOF
