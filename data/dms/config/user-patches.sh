@@ -28,7 +28,7 @@ postconf -F '*/*/chroot = n'
 postconf -e "postscreen_upstream_proxy_protocol = haproxy"
 postconf -e "proxy_interfaces = ${PUBLIC_IP}"
 postconf -e "smtpd_upstream_proxy_protocol = haproxy"
-postconf -e "smtpd_upstream_proxy_timeout = 5s"
+postconf -e "smtpd_upstream_proxy_timeout = 30s"
 
 # Configuration Dovecot pour PROXY Protocol
 cat > /etc/dovecot/conf.d/10-haproxy.conf << EOF
