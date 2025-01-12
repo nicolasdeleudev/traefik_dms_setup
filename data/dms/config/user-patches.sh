@@ -30,7 +30,7 @@ postconf -e "smtpd_upstream_proxy_timeout = 5s"
 
 # Configuration Dovecot pour PROXY Protocol
 cat >> /etc/dovecot/conf.d/10-master.conf << EOF
-haproxy_trusted_networks = ${TRAEFIK_IP}
+haproxy_trusted_networks = ${DOVECOT_TRUSTED_NETWORKS}
 haproxy = yes
 EOF
 
